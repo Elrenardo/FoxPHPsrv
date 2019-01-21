@@ -34,8 +34,9 @@ class FoxPHPsrv
 		$buffer = substr($buffer,1);//enlever le premier "/"
 		$this->router_path = $buffer.'/';
 
-		$this->router->setBasePath( $this->router_path );
-
+		//Si on est pas à la racine 
+		if( $this->router_path != '/')
+			$this->router->setBasePath( $this->router_path );
 
 		//Create Class Route
 		$this->router->map( 'GET|POST', '/[*:class]/[*:method]/[*:params]', function( $class, $method, $params )
@@ -46,6 +47,21 @@ class FoxPHPsrv
 		$this->router->map( 'GET|POST', '/[*:class]/[*:method]', function( $class, $method )
 		{
 		    $this->classExec( $class, $method, null );
+		});
+
+		//Ajout route d'execution Special
+		$this->addData('API::exec', function( $class, $method, $params=null )
+		{
+			$url = $this->dir_main.'/'.$this->dir_class.'/'.$class.'.php';
+
+		    if( file_exists($url))
+		    {
+		    	require_once $url;
+		    	$obj = new $class( $this->data );
+		    	if( method_exists($obj,$method))
+		    		return $obj->{$method}( $this->data, $params );
+		    }
+		    return null;
 		});
 	}
 
@@ -76,13 +92,12 @@ class FoxPHPsrv
 		if( $match && is_callable( $match['target'] ) )
 		{
 			$match['params']['data'] = $this->data;//Add DATA A LA ROUTE
-			call_user_func_array( $match['target'], $match['params'] ); 
+			call_user_func_array( $match['target'], $match['params'] );
+			return;
 		}
-		else
-		{
-			// no route was matched
-			header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Not Found');
-		}
+		// no route was matched
+		header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Not Found');
+		exit('404 Not Found');
 	}
 
 
@@ -102,20 +117,22 @@ class FoxPHPsrv
 	//==============================================
 	//Fonction private exec class
 	//==============================================
-	private function classExec( $class, $method, $params )
+	private function classExec( $class, $method, $params = null )
 	{
 		$url = $this->dir_main.'/'.$this->dir_class.'/'.$class.'.php';
 
 	    if( file_exists($url))
 	    {
-	    	require $url;
+	    	require_once $url;
 	    	$obj = new $class( $this->data );
+
 	    	if( method_exists($obj,$method))
-	    		$obj->{$method}( $this->data, $params );
-	    	else
-	    		header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Method Not Found');
+	    		return $obj->{$method}( $this->data, $params );
+
+	    	header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Method Not Found');
+	    	exit('404 Method Not Found');
 	    }
-	    else
-	    	header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Class Not Found');
+	    header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Class Not Found');
+	    exit('404 Class Not Found');
 	}
 }
