@@ -50,7 +50,7 @@ class FoxPHPsrv
 		});
 
 		//Ajout route d'execution Special
-		$this->addData('API::exec', function( $class, $method, $params=null )
+		$this->addData('exec', function( $class, $method, $params=null )
 		{
 			$url = $this->dir_main.'/'.$this->dir_class.'/'.$class.'.php';
 
@@ -64,6 +64,16 @@ class FoxPHPsrv
 		    return null;
 		});
 	}
+
+
+	//==============================================
+	//==============================================
+	// Ajouter une route manuel
+	//==============================================
+	/*public function __destruct()
+	{
+		$this->exec();
+	}*/
 
 
 

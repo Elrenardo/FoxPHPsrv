@@ -5,27 +5,27 @@ class class_test
 {
 
 	//Constructeur
-	public function __construct( $data )
+	public function __construct( $api )
 	{
 		echo 'Construction class "class_test"<br/>';
 	}
 
 	//Test Params
-	public function main( $data, $params )
+	public function main( $api, $params )
 	{
 		echo ' class_test -> main !<br/>';
 		var_dump( $params );
 	}
 
 	//Affiche hello
-	public function hello( $data, $params )
+	public function hello( $api, $params )
 	{
 		echo 'Hello World';
 	}
 
 	//Appelle CTRL
-	public function print( $data, $params )
+	public function print( $api, $params )
 	{
-		$data['API::exec']('class_test','hello');
+		$api['exec']('class_test','hello',null);
 	}
 }
