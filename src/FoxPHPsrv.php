@@ -22,7 +22,7 @@ class FoxPHPsrv
 	{
 		$this->dir_main  = $dir_main;
 		$this->dir_class = $dir_class;
-		$this->data      = [];
+		$this->data      = new \stdClass();
 
 		//Create Routing
 		$this->router = new \AltoRouter();
@@ -49,26 +49,17 @@ class FoxPHPsrv
 		    $this->classExec( $class, $method, null );
 		});
 
-		//Ajout route d'execution Special
+		//Ajout Apelle d'un CTRL dans un CTRL via l'api
 		$this->addData('exec', function( $class, $method, $params=null )
 		{
-			$url = $this->dir_main.'/'.$this->dir_class.'/'.$class.'.php';
-
-		    if( file_exists($url))
-		    {
-		    	require_once $url;
-		    	$obj = new $class( $this->data );
-		    	if( method_exists($obj,$method))
-		    		return $obj->{$method}( $this->data, $params );
-		    }
-		    return null;
+			$this->classExec( $class, $method, $params );
 		});
 	}
 
 
 	//==============================================
 	//==============================================
-	// Ajouter une route manuel
+	// 
 	//==============================================
 	/*public function __destruct()
 	{
@@ -84,6 +75,41 @@ class FoxPHPsrv
 	public function route( $path, $callback )
 	{
 		$this->router->map( 'GET|POST', $path, $callback);
+	}
+
+
+
+	//==============================================
+	//==============================================
+	// Redirection route vers un dossier
+	//==============================================
+	public function routePath( $path, $dir )
+	{
+		if($path=='/')
+			$path='';
+		$u = $path.'/[**:file]';
+
+		//Route d'auto routage
+		$this->router->map( 'GET|POST', $u, function( $file) use (&$dir)
+		{
+			//verifier que le fichier existe
+			$path_file = $this->dir_main.'/'.$dir.'/'.$file;
+			if( !file_exists( $path_file ))
+			{
+				header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Not Found');
+				exit('404 Not Found');
+			}
+
+			//Get header file
+			$url = 'http://'.$_SERVER['SERVER_NAME'].'/'.$this->router_path.'/'.$dir.'/'.$file;
+			$ret =  get_headers( $url );
+			foreach ($ret as $key => $value){
+				header($value);
+			}
+
+			//Afficher fichier
+			print file_get_contents( $path_file );
+		});
 	}
 
 
@@ -118,7 +144,7 @@ class FoxPHPsrv
 	//==============================================
 	public function addData( $name, $obj )
 	{
-		$this->data[ $name ] = $obj;
+		$this->data->{$name} = $obj;
 	}
 
 
