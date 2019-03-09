@@ -13,15 +13,18 @@ $srv->addData('msg','hello world');
 
 
 //Test rajout d'une route en mode AltoRouter
-$srv->route('/', function( $data )
+$srv->route('/test', function( $data )
 {
 	//echo 'HOME';
-	echo file_get_contents( __DIR__ .'/www/home.html');
+	echo file_get_contents( __DIR__ .'/test.html');
 });
 
 
 //Rajoute de la route path www/ vers /
-$srv->routePath( '/', 'www/' );
+$srv->routePath( '/dir', 'www/' );
+
+//Rajoute de la route path / vers www2/ ( /!\ La racine '/' dois toujours etre en dernier )
+$srv->routePath( '/', 'www2/' );
 
 
 //Lancement ctrl

@@ -38,22 +38,22 @@ class FoxPHPsrv
 		if( $this->router_path != '/')
 			$this->router->setBasePath( $this->router_path );
 
-		//Create Class Route
-		$this->router->map( 'GET|POST', '/[*:class]/[*:method]/[*:params]', function( $class, $method, $params )
-		{
-		    $this->classExec( $class, $method, $params );
-		});
-		//Si la route n'a pas de paramettre
-		$this->router->map( 'GET|POST', '/[*:class]/[*:method]', function( $class, $method )
-		{
-		    $this->classExec( $class, $method, null );
-		});
-
 		//Ajout Apelle d'un CTRL dans un CTRL via l'api
 		$this->addData('exec', function( $class, $method, $params=null )
 		{
 			$this->classExec( $class, $method, $params );
 		});
+
+		//Create Class Route
+		$this->router->map( 'GET|POST', '/[*:class]/[*:method]/[*:params]?', function( $class, $method, $params )
+		{
+		    $this->classExec( $class, $method, $params );
+		});
+		//Si la route n'a pas de paramettre
+		/*$this->router->map( 'GET|POST', '/[*:class]/[*:method]', function( $class, $method )
+		{
+		    $this->classExec( $class, $method, null );
+		});*/
 	}
 
 
@@ -85,13 +85,14 @@ class FoxPHPsrv
 	//==============================================
 	public function routePath( $path, $dir )
 	{
-		if($path=='/')
-			$path='';
-		$u = $path.'/[**:file]';
-
 		//Route d'auto routage
-		$this->router->map( 'GET|POST', $u, function( $file) use (&$dir)
+		$this->router->map( 'GET|POST', $path.'?[**:file]?.*', function( $file ) use (&$dir)
 		{
+			//si aucun fichier selectionné
+			if(gettype($file) != 'string')
+				$file = 'index.html';
+
+
 			//verifier que le fichier existe
 			$path_file = $this->dir_main.'/'.$dir.'/'.$file;
 			if( !file_exists( $path_file ))
@@ -157,16 +158,33 @@ class FoxPHPsrv
 	{
 		$url = $this->dir_main.'/'.$this->dir_class.'/'.$class.'.php';
 
+		//Verifier si le fichier class exist
 	    if( file_exists($url))
 	    {
+	    	//Inclure le fichier
 	    	require_once $url;
+	    	if(!class_exists($class))
+	    	{
+	    		header( $_SERVER["SERVER_PROTOCOL"] . ' 500 Internal Server Error');
+	    		exit('500 Class name is not class name file');
+	    	}
+
+	    	//Verifier que la bariable soie bien un string
+	    	if(gettype($params) != 'string')
+	    		$params = null;
+
+	    	//Création de la class
 	    	$obj = new $class( $this->data );
 
-	    	if( method_exists($obj,$method))
-	    		return $obj->{$method}( $this->data, $params );
+	    	//verifier si la methode existe
+	    	if(!method_exists($obj,$method))
+	    	{
+	    		header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Method Not Found');
+	    		exit('404 Method Not Found');
+	    	}
 
-	    	header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Method Not Found');
-	    	exit('404 Method Not Found');
+	    	//Exécution de la methode du controlleur
+	    	return $obj->{$method}( $this->data, $params );
 	    }
 	    header( $_SERVER["SERVER_PROTOCOL"] . ' 404 Class Not Found');
 	    exit('404 Class Not Found');
